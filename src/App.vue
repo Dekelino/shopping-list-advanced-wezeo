@@ -4,6 +4,8 @@
       <Sidebar />
     </div>
     <div class="content">
+      <Alert :error="error" :isLoading="isLoading" />
+
       <router-view />
     </div>
   </div>
@@ -11,43 +13,19 @@
 
 <script>
 import Sidebar from './components/Sidebar/Sidebar.vue'
+import Alert from './components/Alert.vue'
+import axios from 'axios'
 
 export default {
+  components: {
+    Alert,
+    Sidebar
+  },
   data() {
     return {
-      categories: [
-        {
-          id: 317,
-          title: 'Groceries',
-          icon: null,
-          items: [
-            { id: 315, name: 'Banana', value: '1', unit: 'piece', is_checked: false },
-            { id: 316, name: 'Tomato', value: '1', unit: 'piece', is_checked: false },
-            { id: 317, name: 'Salsa', value: '1', unit: 'piece', is_checked: false },
-            { id: 318, name: 'Pear', value: '1', unit: 'piece', is_checked: false },
-            { id: 319, name: 'Apple', value: '1', unit: 'piece', is_checked: false }
-          ]
-        },
-        {
-          id: 315,
-          title: 'Martinus',
-          icon: null,
-          items: [
-            { id: 306, name: 'Zaklinac 7', value: '1', unit: 'piece', is_checked: false },
-            { id: 307, name: 'Dokonale stopy', value: '1', unit: 'piece', is_checked: false },
-            { id: 308, name: 'Duna', value: '1', unit: 'piece', is_checked: false }
-          ]
-        },
-        {
-          id: 215,
-          title: 'Datart',
-          icon: null,
-          items: [
-            { id: 153, name: 'PlayStation 5', value: '1', unit: 'Piece', is_checked: false },
-            { id: 154, name: "Marvel's Spider-Man 2", value: '1', unit: 'Piece', is_checked: true }
-          ]
-        }
-      ]
+      categories: [],
+      isLoading: false,
+      error: null
     }
   },
   provide() {
@@ -56,11 +34,63 @@ export default {
       items: this.items
     }
   },
-  components: { Sidebar }
+  methods: {
+    async loadDatas() {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const response = await axios.get('https://shoppinglist.wezeo.dev/cms/api/v1/shopping-lists')
+
+        if (response.status === 200) {
+          const shoppingLists = response.data.data
+
+          shoppingLists.forEach((list) => {
+            // Pozerám či sa dáta nenachádzaju už v liste - uniq
+            const existingList = this.categories.find((category) => category.id === list.id)
+
+            if (!existingList) {
+              this.categories.push({
+                id: list.id,
+                title: list.title,
+                items: list.items.map((item) => ({
+                  id: item.id,
+                  name: item.name,
+                  value: item.value,
+                  unit: item.unit,
+                  is_checked: item.is_checked
+                }))
+              })
+            }
+          })
+
+          console.log(this.categories)
+        } else {
+          throw new Error('Failed to fetch data!')
+        }
+      } catch (error) {
+        this.handleError(error)
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    handleError(error) {
+      this.isLoading = false
+      this.error = 'Failed to fetch data!' + ' ' + error
+    }
+  },
+  mounted() {
+    this.loadDatas()
+  }
 }
 </script>
 
 <style>
+.alert {
+  width: 100vw;
+  position: fixed;
+}
 * {
   box-sizing: border-box;
 }
@@ -87,6 +117,5 @@ html {
   width: 75vw;
   padding-left: 25vw;
   background-color: #f1f3ee;
-
 }
 </style>

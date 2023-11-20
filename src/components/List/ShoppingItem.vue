@@ -1,22 +1,23 @@
 <template>
-    <li>
-      <h3>{{ title }}</h3>
-      <div>
-        <li class="items" v-for="item in itemsArray" :key="item.id">
-          {{ item.name }}
-          <div class="item-units">
-            {{ item.value }}
-            {{ item.unit }}
-          </div>
-        </li>
-      </div>
-      <router-link :to="detailsLink">Go to details</router-link>
-    </li>
+  <li>
+    <h3>{{ title }}</h3>
+    <div>
+      <li class="items" v-for="item in itemsArray" :key="item.id">
+        <p v-if="item.is_checked" class="clear">{{ item.name }}</p>
+        <p v-else>{{ item.name }}</p>
+        <div class="item-units">
+          {{ item.value }}
+          {{ item.unit }}
+        </div>
+      </li>
+    </div>
+    <router-link :to="detailsLink">Go to details</router-link>
+  </li>
 </template>
 
 <script>
 export default {
-  props: ['id', 'title', 'items'],
+  props: ['id', 'title', 'items', 'is_checked'],
   data() {
     return {
       itemsArray: this.items
@@ -49,7 +50,7 @@ li h3 {
   justify-content: space-between;
 }
 .item-units {
-  background-color: #CFD7C7;
+  background-color: #cfd7c7;
   color: black;
   padding: 0.1rem 0.7rem;
   border-radius: 12px;
@@ -65,11 +66,15 @@ a:hover,
 a:active {
   background-color: #40798c;
   text-decoration: none;
-  color: #E3EEF2 ;
+  color: #e3eef2;
   display: inline-block;
   padding: 0.5rem;
   display: flex;
   justify-content: center;
   border-radius: 8px;
+}
+
+p.clear {
+  text-decoration: line-through;
 }
 </style>

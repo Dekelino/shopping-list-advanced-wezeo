@@ -19,7 +19,7 @@ export default {
   components: {
     ShoppingItem
   },
-  inject: ['categories']
+  inject: ['categories'],
 }
 </script>
 

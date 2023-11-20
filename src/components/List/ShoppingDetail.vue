@@ -1,5 +1,6 @@
 <template>
   <section>
+    <Alert :error="error" :isLoading="isLoading" :success="success" />
     <header>
       <div class="navigator">
         <div class="arrow-name-container">
@@ -8,7 +9,7 @@
           </router-link>
           <h1>{{ title }}</h1>
         </div>
-        <button>
+        <button @click="deleteList">
           <v-icon icon="mdi-trash-can-outline" color="#C20000" size="x-large"></v-icon>
         </button>
       </div>
@@ -24,10 +25,15 @@
             <div class="item-units">{{ item.value }} {{ item.unit }}</div>
           </div>
         </li>
-
-        <li>
+        <li class="new-item">
           +
-          <input class="add-new" type="text" placeholder="New item" />
+          <input
+            class="add-new"
+            type="text"
+            placeholder="New item"
+            @keyup.enter="addItem"
+            v-model="newItem"
+          />
         </li>
 
         <div>
@@ -41,14 +47,26 @@
 </template>
 
 <script>
+import Alert from '../Alert.vue'
+import axios from 'axios'
 export default {
+  components: {
+    Alert
+  },
   inject: ['categories'],
   data() {
     return {
+      isLoading: false,
+      error: null,
+      success: null,
       title: '',
-      itemsArray: []
+      itemsArray: [],
+      newItem: '',
+      selectedCategory: '',
+      categoryId: parseInt(this.$route.params.categoryId)
     }
   },
+
   computed: {
     selectedItemsString() {
       //pozeram či je checked, ak su tak mapujem ich names
@@ -58,16 +76,57 @@ export default {
       return selectedNames //returnuje array vybraných itemov
     }
   },
-  
+
   created() {
-    const categoryId = parseInt(this.$route.params.categoryId)
-    const selectedCategory = this.categories.find((category) => category.id === categoryId)
+    const selectedCategory = this.categories.find((category) => category.id === this.categoryId)
     this.title = selectedCategory.title
 
     this.itemsArray = selectedCategory.items.map((item) => ({
       ...item //spread operator na vypisania všetého zo selectedCategory
     }))
-
+  },
+  methods: {
+    async deleteList() {
+      try {
+        await axios.delete(
+          `https://shoppinglist.wezeo.dev/cms/api/v1/shopping-lists/${this.categoryId}`
+        )
+        const successMesage = 'Category' + ' ' + this.title + ' ' + '  deleted'
+        this.handleSuccess(successMesage)
+      } catch (error) {
+        this.handleError(error)
+      }
+    },
+    async addItem() {
+      if (this.newItem.trim() !== '') {
+        try {
+          const newItemData = {
+            name: this.newItem,
+            value: '1',
+            unit: 'piece',
+            is_checked: false
+          }
+          await axios.post(
+            `https://shoppinglist.wezeo.dev/cms/api/v1/shopping-lists/${this.categoryId}/items`,
+            newItemData
+          )
+          this.handleSuccess(`${newItemData.name} added`)
+        } catch (error) {
+          this.handleError(error)
+        }
+      }
+    },
+    handleSuccess(successMesage) {
+      this.isLoading = false
+      this.success = successMesage
+      setTimeout(() => {
+        this.success = null
+      }, 3000)
+    },
+    handleError(error) {
+      this.isLoading = false
+      this.error = 'Failed to fetch data!' + ' ' + error
+    }
   }
 }
 </script>
@@ -102,6 +161,16 @@ li {
 
 li label {
   padding-left: 4rem;
+}
+
+li.new-item {
+  display: flex;
+  justify-content: space-between;
+  padding-right: 32vw;
+}
+
+input.add-new {
+  padding-left: 1rem;
 }
 
 .add-new {
